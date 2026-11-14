@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Customer Documents</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Two views in one file: the builder (form, text preview, styled invoice preview) and the customer view opened from a link. */
+:root {
+  color-scheme: light;
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --fg: #17212f;
+  --muted: #536274;
+  --line: #d8e0ea;
+  --field: #fbfcfe;
+  --accent: #1769aa;
+  --accent-fg: #ffffff;
+  --accent-soft: #e8f2fb;
+  --ok: #1769aa;
+  --ok-bg: #e8f2fb;
+  --due: #80530a;
+  --due-bg: #fff4d8;
+  --danger: #b3261e;
+  --danger-bg: #fbe3e0;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+:root[data-theme="dark"] { color-scheme: light; }
+/* Printing always uses the light palette so it never wastes ink. */
+@media print {
+  :root:root:root {
+    --bg: #ffffff; --surface: #ffffff; --fg: #16201a; --muted: #56655d; --line: #d8dfd9;
+    --accent: #1769aa; --accent-fg: #ffffff; --accent-soft: #e8f2fb; --ok: #1769aa; --ok-bg: #e8f2fb;
+    --due: #86500a; --due-bg: #faeed6; --danger: #b3261e; --danger-bg: #fbe3e0; color-scheme: light;
+  }
+  .no-print { display: none !important; }
+  body { padding: 0; }
+  .doc { border: 0; padding: 0; }
+  .band, .chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { width: 100%; max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+h1, h2, legend { font-family: var(--font-display); }
+h1 { font-size: 28px; line-height: 1.15; margin: 0; letter-spacing: -0.01em; font-weight: 700; }
+.sub { margin: 6px 0 0; color: var(--muted); max-width: 62ch; }
+h2 { font-size: 17px; margin: 0; font-weight: 700; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.mark { flex: none; }
+.badge { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 5px 12px; }
+
+.amount { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.amount .lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.amount .big { font-family: var(--font-display); font-size: 36px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.amount .due { color: var(--muted); font-size: 13px; text-align: right; }
+
+.note {
+  display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;
+}
+.note span { min-width: 0; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (min-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr) 380px; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+.form { display: flex; flex-direction: column; gap: 22px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+legend { padding: 0; margin-bottom: 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.sep { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .fl, .cell label { font-size: 14px; font-weight: 600; color: var(--muted); }
+input, select, textarea {
+  font: inherit; font-size: 16px; color: var(--fg); background: var(--field);
+  border: 1px solid var(--line); border-radius: 7px; padding: 12px 13px; width: 100%; min-width: 0;
+}
+textarea { resize: vertical; min-height: 64px; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.7; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; align-self: flex-start; max-width: 100%; }
+.seg button {
+  font: inherit; font-weight: 500; background: transparent; color: var(--muted); border: 0;
+  padding: 8px 16px; cursor: pointer; border-right: 1px solid var(--line);
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+
+.btn {
+  font: inherit; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-fg); cursor: pointer; text-decoration: none; text-align: center;
+}
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.small { padding: 6px 11px; font-size: 13px; }
+.btn.danger { color: var(--danger); border-color: var(--danger); }
+.btn.danger[data-armed="1"] { background: var(--danger); color: var(--surface); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* line items */
+#items { container-type: inline-size; }
+.item {
+  display: grid; grid-template-columns: minmax(0, 1fr) 72px 104px 92px 40px; gap: 8px 10px; align-items: end;
+  padding: 10px 0; border-top: 1px solid var(--line);
+}
+.item:first-child { border-top: 0; padding-top: 0; }
+.cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.amt { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding: 9px 0; }
+.x { background: transparent; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); height: 40px; cursor: pointer; font-size: 18px; line-height: 1; }
+.x:disabled { opacity: 0.35; cursor: not-allowed; }
+@container (max-width: 540px) {
+  .item { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) 40px; }
+  .item .desc { grid-column: 1 / -1; }
+}
+.add { align-self: flex-start; }
+
+.totals { margin-left: auto; width: min(100%, 300px); display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; font-variant-numeric: tabular-nums; }
+.totals dt { color: var(--muted); }
+.totals dd { margin: 0; text-align: right; }
+.totals .grand { font-weight: 700; font-size: 17px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--fg); }
+
+/* text message preview */
+.preview { display: flex; flex-direction: column; gap: 14px; }
+@media (min-width: 880px) { .preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); } }
+.preview-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.to { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.phone {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  max-height: 460px; overflow-y: auto;
+}
+.bubble {
+  background: var(--accent); color: var(--accent-fg); border-radius: 16px 16px 4px 16px;
+  padding: 11px 14px; margin-left: 12%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; font-size: 16px; line-height: 1.6;
+}
+.meta { color: var(--muted); font-size: 13px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.hint.warn { color: var(--due); }
+
+/* the styled invoice (builder preview and customer view) */
+.doc-section { display: flex; flex-direction: column; gap: 12px; }
+.doc {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 28px;
+  width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;
+}
+.doc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px 24px; flex-wrap: wrap; }
+.doc-biz { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.doc-sub { color: var(--muted); font-size: 15px; margin-top: 3px; }
+.doc-title { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-left: auto; }
+.doc-title .word { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.2em; font-weight: 700; color: var(--accent); }
+.doc-title .no { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1.1; }
+.chip { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 3px 10px; }
+.chip.paid { background: var(--ok-bg); color: var(--ok); }
+.chip.unpaid { background: var(--due-bg); color: var(--due); }
+.chip.overdue { background: var(--danger-bg); color: var(--danger); }
+.doc-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; padding: 16px 0; border-block: 1px solid var(--line); margin: 0; }
+.doc-meta dt { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.doc-meta dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.doc-head, .doc-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.doc-head { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.doc-head span:last-child, .doc-line .am { text-align: right; }
+.doc-line { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.doc-line .nm { font-weight: 500; overflow-wrap: anywhere; }
+.doc-line .qr { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.doc-line .am { font-weight: 600; font-variant-numeric: tabular-nums; }
+.doc-sums { margin-left: auto; width: min(100%, 280px); display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; font-variant-numeric: tabular-nums; }
+.doc-sums dt { color: var(--muted); }
+.doc-sums dd { margin: 0; text-align: right; font-weight: 500; }
+.band { background: var(--accent); color: var(--accent-fg); border-radius: 10px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; }
+.band .lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.9; }
+.band .amt2 { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.band .when { font-weight: 600; }
+.doc-block h3 { font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.doc-block p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.doc-thanks { color: var(--muted); font-size: 14px; text-align: center; padding-top: 4px; }
+.doc-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 760px; margin: 0 auto; width: 100%; }
+.doc-foot { text-align: center; color: var(--muted); font-size: 13px; margin: 0; }
+.doc-foot a { color: var(--accent); font-weight: 600; }
+.viewer-error { max-width: 520px; margin: 40px auto; text-align: center; }
+@media (max-width: 520px) { .doc { padding: 20px; } .band .amt2 { font-size: 28px; } }
+
+/* saved invoices */
+.history ul { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; }
+.history li { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--line); }
+.history li:first-child { border-top: 0; }
+.h-main { min-width: 0; display: flex; flex-direction: column; }
+.h-main strong { overflow-wrap: anywhere; }
+.h-main span { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.h-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.empty { color: var(--muted); margin: 10px 0 0; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-weight: 500; z-index: 20;
+  max-width: calc(100% - 32px);
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="builder">
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
+        <rect width="40" height="40" rx="10" fill="var(--accent)"/>
+        <path d="M11 12h18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H19l-6 5v-5h-2a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" fill="none" stroke="var(--accent-fg)" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M15 17.5h10M15 21h6" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Text Invoice</h1>
+        <p class="sub">Create and send professional estimates, invoices, and receipts.</p>
+      </div>
+    </div>
+    <span class="badge">Customer documents</span>
+  </header>
+
+  <div id="example" class="note" role="note">
+    <span>Example details are filled in so you can see how it works. Replace them with your own.</span>
+    <button type="button" id="blank" class="btn ghost small">Start blank</button>
+  </div>
+
+  <main class="grid">
+    <section class="card form" aria-label="Invoice details">
+      <div class="row">
+        <div class="field">
+          <span class="fl">Message type</span>
+          <div class="seg" role="group" aria-label="Message type">
+            <button type="button" data-kind="estimate" aria-pressed="false">Estimate</button>
+            <button type="button" data-kind="invoice" aria-pressed="true">Invoice</button>
+            <button type="button" data-kind="receipt" aria-pressed="false">Receipt</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="fl">Send as</span>
+          <div class="seg" role="group" aria-label="Send as">
+            <button type="button" data-mode="link" aria-pressed="true">Invoice link</button>
+            <button type="button" data-mode="text" aria-pressed="false">Plain text</button>
+          </div>
+        </div>
+      </div>
+
+      <hr class="sep">
+      <fieldset>
+        <legend>From you</legend>
+        <div class="row">
+          <div class="field"><label for="f-biz">Business or your name</label><input id="f-biz" type="text" autocomplete="organization"></div>
+          <div class="field"><label for="f-bizPhone">Your phone</label><input id="f-bizPhone" type="tel" autocomplete="tel"></div>
+        </div>
+        <div class="field"><label for="f-pay">How to pay you</label><textarea id="f-pay" placeholder="Zelle, Venmo, check, cash"></textarea></div>
+      </fieldset>
+
+      <hr class="sep">
+      <fieldset>
+        <legend>Bill to</legend>
+        <div class="row">
+          <div class="field"><label for="f-client">Customer name</label><input id="f-client" type="text" autocomplete="off"></div>
+          <div class="field"><label for="f-clientPhone">Customer mobile (to text)</label><input id="f-clientPhone" type="tel" autocomplete="off"></div>
+        </div>
+      </fieldset>
+
+      <hr class="sep">
+      <fieldset>
+        <legend>Document details</legend>
+        <div class="row">
+          <div class="field"><label for="f-num">Document number</label><input id="f-num" type="text" inputmode="numeric"></div>
+          <div class="field"><label for="f-date">Invoice date</label><input id="f-date" type="date"></div>
+          <div class="field"><label for="f-terms">Payment due</label>
+            <select id="f-terms">
+              <option value="0">On receipt</option>
+              <option value="7">In 7 days</option>
+              <option value="14">In 14 days</option>
+              <option value="30">In 30 days</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <hr class="sep">
+      <fieldset>
+        <legend>Work and materials</legend>
+        <div id="items"></div>
+        <button type="button" id="add" class="btn ghost small add">+ Add a line</button>
+        <dl class="totals">
+          <dt>Subtotal</dt><dd id="t-sub">$0.00</dd>
+          <dt class="grand">Total</dt><dd class="grand" id="t-total">$0.00</dd>
+        </dl>
+        <div class="field"><label for="f-notes">Note to customer (optional)</label><textarea id="f-notes" placeholder="Warranty details, thank you, next visit"></textarea></div>
+      </fieldset>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button type="button" id="save" class="btn">Save document</button>
+        <button type="button" id="new" class="btn ghost">New document</button>
+      </div>
+    </section>
+
+    <aside class="card preview" aria-label="Text message preview">
+      <div class="preview-head">
+        <h2 id="p-title">Your invoice text</h2>
+        <span class="to" id="p-to"></span>
+      </div>
+      <div class="amount">
+        <div><div class="lbl" id="p-lbl">Amount due</div><div class="big" id="p-amount">$0.00</div></div>
+        <div class="due" id="p-due"></div>
+      </div>
+      <div class="phone"><div class="bubble" id="bubble" aria-live="polite"></div></div>
+      <div class="meta" id="chars"></div>
+      <div class="actions">
+        <a class="btn" id="sms" href="sms:" rel="noopener">Open in Messages</a>
+        <button type="button" class="btn ghost" id="copy">Copy message</button>
+      </div>
+      <p class="hint" id="mode-hint"></p>
+    </aside>
+  </main>
+
+  <section class="doc-section" id="doc-section" aria-label="Invoice preview">
+    <h2>What your customer sees when they tap the link</h2>
+    <div id="doc-preview"></div>
+  </section>
+
+  <section class="card history" aria-label="Saved invoices">
+    <h2>Saved invoices</h2>
+    <ul id="list"></ul>
+    <p class="empty" id="empty">Invoices you save show up here, so you can reopen one, send a reminder, or mark it paid.</p>
+  </section>
+</div>
+
+<div class="wrap" id="viewer" hidden style="max-width:820px">
+  <div id="viewer-doc"></div>
+  <div class="doc-actions no-print" id="viewer-actions"></div>
+  
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const KEYS = { draft: 'textinvoice.draft', list: 'textinvoice.invoices' };
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const parseISO = (s) => { const p = String(s || '').split('-').map(Number); return p.length === 3 && p[0] ? new Date(p[0], p[1] - 1, p[2]) : new Date(); };
+  const fmtDate = (d) => isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const money = (c) => '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const num = (v) => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : 0; };
+  const digits = (s) => String(s || '').replace(/[^\d+]/g, '');
+  const firstName = (s) => String(s || '').trim().split(/\s+/)[0];
+  const termsN = (d) => { const n = parseInt(d.terms, 10); return isFinite(n) && n >= 0 && n <= 365 ? n : 0; };
+
+  /* ---------- calculations (work on any invoice object) ---------- */
+  const lineCents = (it) => Math.round(num(it.q) * num(it.r) * 100);
+  function calc(d) {
+    const sub = d.items.reduce((s, it) => s + lineCents(it), 0);
+    return { sub, total: sub };
+  }
+  function dueOf(d) { const x = parseISO(d.date); x.setDate(x.getDate() + termsN(d)); return x; }
+  function daysUntilDue(d) { const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((dueOf(d) - t) / 86400000); }
+
+  /* ---------- the styled invoice (used by the builder preview and the customer view) ---------- */
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function renderInvoice(box, d) {
+    const c = calc(d);
+    const receipt = d.kind === 'receipt';
+    const estimate = d.kind === 'estimate';
+    const docType = estimate ? 'ESTIMATE' : receipt ? 'RECEIPT' : 'INVOICE';
+    const diff = daysUntilDue(d);
+    box.textContent = '';
+    const doc = el('article', 'doc');
+    doc.setAttribute('aria-label', estimate ? 'Estimate' : receipt ? 'Receipt' : 'Invoice');
+
+    const top = el('div', 'doc-top');
+    const left = el('div');
+    left.append(el('div', 'doc-biz', d.biz || 'Your business'));
+    if (d.bizPhone) left.append(el('div', 'doc-sub', d.bizPhone));
+    const right = el('div', 'doc-title');
+    right.append(el('div', 'word', docType), el('div', 'no', '#' + (d.num || '1')));
+    let chip;
+    if (receipt) chip = el('span', 'chip paid', 'Paid');
+    else if (estimate) chip = el('span', 'chip unpaid', 'Estimate');
+    else if (diff < 0) chip = el('span', 'chip overdue', 'Overdue');
+    else chip = el('span', 'chip unpaid', termsN(d) === 0 ? 'Due on receipt' : diff === 0 ? 'Due today' : 'Due ' + fmtDate(dueOf(d)));
+    right.append(chip);
+    top.append(left, right);
+
+    const meta = el('dl', 'doc-meta');
+    const add = (k, v) => { const w = el('div'); w.append(el('dt', null, k), el('dd', null, v)); meta.append(w); };
+    add('Billed to', d.client || 'Customer');
+    add('Issued', fmtDate(parseISO(d.date)));
+    if (!receipt && !estimate) add('Due', termsN(d) === 0 ? 'On receipt' : fmtDate(dueOf(d)));
+
+    const lines = el('div');
+    const head = el('div', 'doc-head'); head.append(el('span', null, 'Description'), el('span', null, 'Amount'));
+    lines.append(head);
+    const shown = d.items.filter((it) => String(it.d).trim() || lineCents(it) > 0);
+    shown.forEach((it) => {
+      const row = el('div', 'doc-line');
+      const l = el('div');
+      l.append(el('div', 'nm', String(it.d).trim() || 'Item'));
+      const q = num(it.q);
+      if (q !== 1 && q !== 0) l.append(el('div', 'qr', q + ' × ' + money(Math.round(num(it.r) * 100))));
+      row.append(l, el('div', 'am', money(lineCents(it))));
+      lines.append(row);
+    });
+
+    const sums = el('dl', 'doc-sums');
+    sums.append(el('dt', null, 'Subtotal'), el('dd', null, money(c.sub)));
+
+    const band = el('div', 'band');
+    const bl = el('div'); bl.append(el('div', 'lbl', receipt ? 'Payment received' : estimate ? 'Estimated total' : 'Amount due'), el('div', 'amt2', money(c.total)));
+    band.append(bl, el('div', 'when', receipt ? 'Paid in full' : estimate ? 'Pending approval' : termsN(d) === 0 ? 'Due on receipt' : 'Due ' + fmtDate(dueOf(d))));
+
+    doc.append(top, meta, lines, sums, band);
+    if (!receipt && !estimate && String(d.pay).trim()) {
+      const b = el('div', 'doc-block'); b.append(el('h3', null, 'How to pay'), el('p', null, d.pay.trim())); doc.append(b);
+    }
+    if (String(d.notes).trim()) {
+      const b = el('div', 'doc-block'); b.append(el('h3', null, 'Note'), el('p', null, d.notes.trim())); doc.append(b);
+    }
+    box.append(doc);
+  }
+
+  /* ---------- link encoding: the whole invoice travels inside the link ---------- */
+  const b64u = {
+    enc(bytes) { let s = ''; bytes.forEach((b) => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+  };
+  async function pipe(bytes, stream) {
+    const w = stream.writable.getWriter(); w.write(bytes).catch(() => {}); w.close().catch(() => {});
+    return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  }
+  async function pack(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj));
+    if (window.CompressionStream) { try { return 'z' + b64u.enc(await pipe(bytes, new CompressionStream('deflate-raw'))); } catch (e) {} }
+    return 'j' + b64u.enc(bytes);
+  }
+  async function unpack(s) {
+    const bytes = b64u.dec(s.slice(1));
+    const raw = s[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
+    return JSON.parse(new TextDecoder().decode(raw));
+  }
+  const toPayload = (d) => ({
+    k: d.kind, b: d.biz.trim(), bp: d.bizPhone.trim(), p: d.pay.trim(), c: d.client.trim(), n: d.num.trim(), d: d.date, t: d.terms,
+    i: d.items.filter((it) => String(it.d).trim() || lineCents(it) > 0).map((it) => [String(it.d).trim(), it.q, it.r]), o: d.notes.trim()
+  });
+  const str = (v, max) => (typeof v === 'string' ? v : v == null ? '' : String(v)).slice(0, max || 2000);
+  function fromPayload(p) {
+    const items = Array.isArray(p.i) ? p.i.slice(0, 100).map((a) => ({ d: str(a && a[0], 300), q: str(a && a[1], 12), r: str(a && a[2], 12) })) : [];
+    const kind = ['estimate', 'invoice', 'reminder', 'receipt'].indexOf(p.k) >= 0 ? p.k : 'invoice';
+    return { kind, biz: str(p.b, 120), bizPhone: str(p.bp, 40), pay: str(p.p), client: str(p.c, 120), num: str(p.n, 20), date: str(p.d, 10) || todayISO(), terms: str(p.t, 4) || '0', items, notes: str(p.o) };
+  }
+  const hosted = /^https?:$/.test(location.protocol);
+  const baseUrl = () => hosted ? location.origin + location.pathname : location.href.split('#')[0];
+
+  /* ---------- customer view ---------- */
+  const m = /^#inv=([zj][A-Za-z0-9_-]+)$/.exec(location.hash);
+  window.addEventListener('hashchange', () => location.reload());
+  if (m) { bootViewer(m[1]); return; }
+  bootBuilder();
+
+  async function bootViewer(code) {
+    $('builder').hidden = true;
+    $('viewer').hidden = false;
+    try {
+      const d = fromPayload(await unpack(code));
+      document.title = (d.kind === 'estimate' ? 'Estimate #' : d.kind === 'receipt' ? 'Receipt #' : 'Invoice #') + (d.num || '1') + (d.biz ? ' from ' + d.biz : '');
+      renderInvoice($('viewer-doc'), d);
+      const acts = $('viewer-actions');
+      const p = digits(d.bizPhone);
+      if (p) {
+        const call = el('a', 'btn', 'Call ' + (d.biz || 'us')); call.href = 'tel:' + p;
+        const txt = el('a', 'btn ghost', 'Text ' + (d.biz || 'us')); txt.href = 'sms:' + p;
+        acts.append(call, txt);
+      }
+      const pr = el('button', 'btn ghost', 'Print or save as PDF'); pr.type = 'button';
+      pr.addEventListener('click', () => { try { window.print(); } catch (e) {} });
+      acts.append(pr);
+    } catch (e) {
+      const box = $('viewer-doc'); box.textContent = '';
+      const err = el('div', 'viewer-error');
+      err.append(el('h2', null, 'This invoice link looks incomplete'), el('p', 'sub', 'Part of the link may have been cut off. Ask the sender to text it again.'));
+      box.append(err);
+      $('viewer-actions').hidden = true;
+    }
+  }
+
+  /* ---------- builder ---------- */
+  function bootBuilder() {
+    let invoices = load(KEYS.list, []);
+    const nextNum = () => invoices.reduce((mx, i) => Math.max(mx, parseInt(i.num, 10) || 0), 1000) + 1;
+    const blankItem = () => ({ d: '', q: '1', r: '' });
+
+    const exampleState = () => ({
+      kind: 'invoice', mode: 'link', biz: 'Mesa Ridge Plumbing', bizPhone: '(555) 010-2244',
+      pay: 'Zelle to (555) 010-2244, or check payable to Mesa Ridge Plumbing',
+      client: 'Jordan Alvarez', clientPhone: '(555) 010-8891',
+      num: String(nextNum()), date: todayISO(), terms: '14',
+      items: [
+        { d: 'Water heater flush and inspection', q: '1', r: '145' },
+        { d: 'Replace shutoff valve (parts)', q: '2', r: '38.50' },
+        { d: 'Labor (hours)', q: '1.5', r: '95' }
+      ],
+      notes: ''
+    });
+
+    const draft = load(KEYS.draft, null);
+    let isExample = !draft && invoices.length === 0;
+    let state = draft || (isExample ? exampleState() : Object.assign(exampleState(), {
+      biz: '', bizPhone: '', pay: '', client: '', clientPhone: '', items: [blankItem()], notes: ''
+    }));
+    if (!Array.isArray(state.items) || !state.items.length) state.items = [blankItem()];
+    if (state.mode !== 'text') state.mode = 'link';
+
+    const textFields = ['biz', 'bizPhone', 'pay', 'client', 'clientPhone', 'num', 'date', 'terms', 'notes'];
+    let amtEls = [];
+
+    function whenPhrase() {
+      const diff = daysUntilDue(state);
+      return diff < 0 ? 'was due ' + fmtDate(dueOf(state)) : diff === 0 ? 'is due today' : 'is due ' + fmtDate(dueOf(state));
+    }
+
+    function buildLinkMessage(c, link) {
+      const first = firstName(state.client);
+      const hi = 'Hi' + (first ? ' ' + first : '') + ',';
+      const n = state.num.trim() || '1';
+      const biz = state.biz.trim() || 'us';
+      if (state.kind === 'receipt') return hi + ' your receipt for ' + money(c.total) + ' is ready. View it here:\n' + link;
+      if (state.kind === 'estimate') return hi + ' your estimate from ' + biz + ' for ' + money(c.total) + ' is ready for review. View it here:\n' + link;
+      if (state.kind === 'reminder') return hi + ' a friendly reminder that invoice #' + n + ' from ' + biz + ' for ' + money(c.total) + ' ' + whenPhrase() + '. View it and how to pay here:\n' + link;
+      return hi + ' here is invoice #' + n + ' from ' + biz + ' for ' + money(c.total) + (termsN(state) === 0 ? ', due on receipt' : ', due ' + fmtDate(dueOf(state))) + '. View it here:\n' + link;
+    }
+
+    function ruleLine() { return '----------------------'; }
+
+    function buildText(c) {
+      const biz = state.biz.trim() || 'me';
+      const client = state.client.trim();
+      const first = firstName(client);
+      const n = state.num.trim() || '1';
+      const pay = state.pay.trim();
+      const notes = state.notes.trim();
+      const phone = state.bizPhone.trim();
+      const L = [];
+
+      if (state.kind === 'receipt') {
+        L.push('RECEIPT #' + n, biz, 'Payment received: ' + money(c.total));
+        if (notes) L.push('', notes);
+        L.push('', '- ' + biz + (phone ? ', ' + phone : ''));
+        return L.join('\n');
+      }
+      if (state.kind === 'estimate') {
+        L.push('ESTIMATE #' + n, biz, ruleLine());
+        L.push('Date: ' + fmtDate(parseISO(state.date)));
+        if (client) L.push('Prepared for: ' + client);
+        const estimateLines = state.items.filter((it) => it.d.trim() || lineCents(it) > 0);
+        estimateLines.forEach((it) => L.push(it.d.trim() + ': ' + money(lineCents(it))));
+        L.push('ESTIMATED TOTAL: ' + money(c.total));
+        if (notes) L.push('', notes);
+        if (phone) L.push('', 'Questions? Call or text ' + phone);
+        return L.join('\n');
+      }
+      if (state.kind === 'reminder') {
+        L.push('Hi' + (first ? ' ' + first : '') + ', a friendly reminder that invoice #' + n + ' from ' + biz + ' for ' + money(c.total) + ' ' + whenPhrase() + '.');
+        if (pay) L.push('', 'How to pay: ' + pay);
+        if (phone) L.push('', 'Questions? ' + phone);
+        L.push('', 'Thank you, ' + biz);
+        return L.join('\n');
+      }
+      const rule = ruleLine();
+      L.push('INVOICE #' + n, biz, rule);
+      L.push('Date: ' + fmtDate(parseISO(state.date)));
+      L.push(termsN(state) === 0 ? 'Due: On receipt' : 'Due: ' + fmtDate(dueOf(state)));
+      if (client) L.push('Bill to: ' + client);
+      const lines = state.items.filter((it) => it.d.trim() || lineCents(it) > 0);
+      if (lines.length) {
+        L.push(rule);
+        lines.forEach((it) => {
+          const q = num(it.q), amt = money(lineCents(it));
+          const name = it.d.trim() || 'Item';
+          if (q === 1 || q === 0) L.push(name + ': ' + amt);
+          else L.push(name, '   ' + q + ' x ' + money(Math.round(num(it.r) * 100)) + ' = ' + amt);
+        });
+      }
+      L.push(rule);
+      L.push('TOTAL DUE: ' + money(c.total));
+      if (pay) L.push('', 'How to pay:', pay);
+      if (notes) L.push('', notes);
+      if (phone) L.push('', 'Questions? Call or text ' + phone);
+      return L.join('\n');
+    }
+
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    function setMessage(msg) {
+      $('bubble').textContent = msg;
+      $('chars').textContent = state.mode === 'link' ? 'Short text with a link to your invoice' : msg.length + ' characters';
+      const phone = digits(state.clientPhone);
+      $('sms').setAttribute('href', 'sms:' + phone + (isIOS ? '&' : '?') + 'body=' + encodeURIComponent(msg));
+    }
+
+    let token = 0;
+    function update() {
+      const c = calc(state);
+      state.items.forEach((it, i) => { if (amtEls[i]) amtEls[i].textContent = money(lineCents(it)); });
+      $('t-sub').textContent = money(c.sub);
+      $('t-total').textContent = money(c.total);
+
+      const titles = { estimate: 'Your estimate', invoice: 'Your invoice', reminder: 'Your reminder text', receipt: 'Your receipt' };
+      $('p-title').textContent = titles[state.kind];
+      $('p-amount').textContent = money(c.total);
+      $('p-lbl').textContent = state.kind === 'receipt' ? 'Payment received' : state.kind === 'estimate' ? 'Estimated total' : 'Amount due';
+      $('p-due').textContent = state.kind === 'receipt' ? 'Document #' + (state.num.trim() || '1')
+        : state.kind === 'estimate' ? 'Pending approval'
+        : (termsN(state) === 0 ? 'Due on receipt' : 'Due ' + fmtDate(dueOf(state)));
+      const who = state.client.trim() || state.clientPhone.trim();
+      $('p-to').textContent = who ? 'To: ' + who : 'Add a customer mobile to address it';
+
+      const hint = $('mode-hint');
+      hint.className = 'hint';
+      if (state.mode === 'link') {
+        hint.textContent = hosted
+          ? 'Your customer taps the link and sees the invoice below. Nothing is sent until you press send in your messaging app. If Messages does not open, use Copy message.'
+          : 'This page is open from a file, so the link would only work on this device. Put the page on a website first, or switch to Plain text.';
+        if (!hosted) hint.className = 'hint warn';
+      } else {
+        hint.textContent = 'Plain text sends all the details in the message itself, with no link. Nothing is sent until you press send in your messaging app.';
+      }
+      $('doc-section').hidden = state.mode === 'text';
+      if (state.mode === 'link') renderInvoice($('doc-preview'), state);
+
+      const tok = ++token;
+      if (state.mode === 'text') setMessage(buildText(c));
+      else pack(toPayload(state)).then((code) => { if (tok === token) setMessage(buildLinkMessage(calc(state), baseUrl() + '#inv=' + code)); });
+
+      if (!isExample) store(KEYS.draft, state);
+    }
+
+    function touched() {
+      if (isExample) { isExample = false; $('example').hidden = true; }
+    }
+
+    function renderItems() {
+      const box = $('items');
+      box.textContent = '';
+      amtEls = [];
+      state.items.forEach((it, i) => {
+        const row = el('div', 'item');
+        const mk = (cls, label, type, key, attrs) => {
+          const cell = el('div', 'cell ' + cls);
+          const id = 'i-' + key + '-' + i;
+          const lab = el('label', null, label); lab.htmlFor = id;
+          const inp = document.createElement('input');
+          inp.id = id; inp.type = type; inp.value = it[key];
+          Object.keys(attrs || {}).forEach((a) => inp.setAttribute(a, attrs[a]));
+          inp.addEventListener('input', () => { it[key] = inp.value; touched(); update(); });
+          cell.append(lab, inp);
+          return cell;
+        };
+        row.append(
+          mk('desc', 'Description', 'text', 'd', { placeholder: 'Labor, parts, trip charge', autocomplete: 'off' }),
+          mk('', 'Qty', 'number', 'q', { inputmode: 'decimal', min: '0', step: 'any' }),
+          mk('', 'Rate ($)', 'number', 'r', { inputmode: 'decimal', min: '0', step: '0.01', placeholder: '0.00' })
+        );
+        const a = el('div', 'cell');
+        const av = el('div', 'amt', money(lineCents(it)));
+        a.append(el('label', null, 'Amount'), av); amtEls.push(av);
+        const x = el('button', 'x', '×');
+        x.type = 'button';
+        x.setAttribute('aria-label', 'Remove this line');
+        x.disabled = state.items.length === 1;
+        x.addEventListener('click', () => { state.items.splice(i, 1); touched(); renderItems(); update(); });
+        row.append(a, x);
+        box.appendChild(row);
+      });
+    }
+
+    function syncFields() {
+      textFields.forEach((k) => { $('f-' + k).value = state[k]; });
+      document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
+      document.querySelectorAll('[data-mode]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
+      renderItems();
+      update();
+    }
+
+    textFields.forEach((k) => {
+      $('f-' + k).addEventListener('input', (e) => { state[k] = e.target.value; touched(); update(); });
+    });
+    document.querySelectorAll('[data-kind]').forEach((b) => {
+      b.addEventListener('click', () => {
+        state.kind = b.dataset.kind;
+        document.querySelectorAll('[data-kind]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+        touched(); update();
+      });
+    });
+    document.querySelectorAll('[data-mode]').forEach((b) => {
+      b.addEventListener('click', () => {
+        state.mode = b.dataset.mode;
+        document.querySelectorAll('[data-mode]').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+        touched(); update();
+      });
+    });
+    $('add').addEventListener('click', () => {
+      state.items.push(blankItem()); touched(); renderItems(); update();
+      const last = $('i-d-' + (state.items.length - 1)); if (last) last.focus();
+    });
+
+    $('blank').addEventListener('click', () => {
+      isExample = false; $('example').hidden = true;
+      Object.assign(state, { biz: '', bizPhone: '', pay: '', client: '', clientPhone: '', items: [blankItem()], notes: '', kind: 'invoice', terms: '14', date: todayISO(), num: String(nextNum()) });
+      syncFields();
+      $('f-biz').focus();
+    });
+
+    $('new').addEventListener('click', () => {
+      touched();
+      Object.assign(state, { kind: 'invoice', client: '', clientPhone: '', items: [blankItem()], notes: '', date: todayISO(), num: String(nextNum()) });
+      syncFields();
+      toast('New document started');
+      $('f-client').focus();
+    });
+
+    $('save').addEventListener('click', () => {
+      touched();
+      const c = calc(state);
+      const n = state.num.trim() || String(nextNum());
+      state.num = n; $('f-num').value = n;
+      const snap = JSON.parse(JSON.stringify(state));
+      const i = invoices.findIndex((x) => x.num === n);
+      const rec = { num: n, client: state.client.trim(), total: c.total, date: state.date, status: i >= 0 ? invoices[i].status : 'unpaid', snap: snap };
+      if (i >= 0) invoices[i] = rec; else invoices.unshift(rec);
+      store(KEYS.list, invoices);
+      store(KEYS.draft, state);
+      renderList();
+      toast('Saved document #' + n);
+    });
+
+    function renderList() {
+      const ul = $('list');
+      ul.textContent = '';
+      $('empty').hidden = invoices.length > 0;
+      invoices.forEach((rec, i) => {
+        const li = el('li');
+        const main = el('div', 'h-main');
+        main.append(el('strong', null, '#' + rec.num + (rec.client ? '  ' + rec.client : '')), el('span', null, fmtDate(parseISO(rec.date)) + '  |  ' + money(rec.total)));
+        const act = el('div', 'h-actions');
+        const chip = el('span', 'chip ' + (rec.status === 'paid' ? 'paid' : 'unpaid'), rec.status === 'paid' ? 'Paid' : 'Unpaid');
+        const open = el('button', 'btn ghost small', 'Open'); open.type = 'button';
+        open.addEventListener('click', () => {
+          isExample = false; $('example').hidden = true;
+          state = JSON.parse(JSON.stringify(rec.snap));
+          if (state.mode !== 'text') state.mode = 'link';
+          syncFields();
+          window.scrollTo({ top: 0 });
+          toast('Opened invoice #' + rec.num);
+        });
+        const pay = el('button', 'btn ghost small', rec.status === 'paid' ? 'Mark unpaid' : 'Mark paid'); pay.type = 'button';
+        pay.addEventListener('click', () => { rec.status = rec.status === 'paid' ? 'unpaid' : 'paid'; store(KEYS.list, invoices); renderList(); });
+        const del = el('button', 'btn ghost danger small', 'Delete'); del.type = 'button';
+        del.addEventListener('click', () => {
+          if (del.dataset.armed === '1') { invoices.splice(i, 1); store(KEYS.list, invoices); renderList(); return; }
+          del.dataset.armed = '1'; del.textContent = 'Tap again to delete';
+          setTimeout(() => { del.dataset.armed = '0'; del.textContent = 'Delete'; }, 3000);
+        });
+        act.append(chip, open, pay, del);
+        li.append(main, act);
+        ul.appendChild(li);
+      });
+    }
+
+    $('copy').addEventListener('click', () => {
+      const text = $('bubble').textContent;
+      const fallback = () => {
+        const r = document.createRange(); r.selectNodeContents($('bubble'));
+        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        toast('Message selected. Use Copy from your menu.');
+      };
+      try {
+        navigator.clipboard.writeText(text).then(() => toast('Message copied. Paste it into a text.'), fallback);
+      } catch (e) { fallback(); }
+    });
+
+    $('example').hidden = !isExample;
+    renderList();
+    syncFields();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+})();
+</script>
+
+</body>
+</html>
